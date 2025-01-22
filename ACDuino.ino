@@ -7,8 +7,6 @@ int releCompressorPin = 8;   // Pino digital para o Relé 2/Compressor
 
 OneWire ds(10);  // on pin 10 (a 4.7K resistor is necessary)
 
-
-
 void setup() {
   // Configura os pinos dos sensores como entrada
   pinMode(releVentoinhaPin, INPUT);
@@ -24,12 +22,12 @@ void setup() {
 
   // Inicializa o monitor serial
   Serial.begin(9600);
+  Serial.println("Sistema iniciado. Monitorando sensores...");
 }
 
 void loop() {
-
   // Lê os valores dos sensores
-  int sensor1Value = analogRead(releVentoinhaPin); // Valor do Sensor 1 (0 a 1023)
+  int sensorPressaoValue = analogRead(SensorPressaoPin); // Valor do Sensor de Pressão (0 a 1023)
 
   // Sensor Temperatura
   byte data[9];
@@ -39,6 +37,7 @@ void loop() {
   if (!ds.search(addr)) {
     ds.reset_search();
     delay(250);
+    Serial.println("Nenhum sensor de temperatura detectado.");
     return;
   }
 
@@ -58,28 +57,30 @@ void loop() {
   int16_t raw = (data[1] << 8) | data[0];
   celsius = (float)raw / 16.0;
 
-
   // Converte os valores para tensão (0 a 5V)
-  float voltage1 = sensor1Value * (5.0 / 1023.0);
+  float voltagePressao = sensorPressaoValue * (5.0 / 1023.0);
+  float pressaoPSI = voltagePressao * 100; // Supondo que 0-5V representa 0-500 PSI
+  float pressaoBar = pressaoPSI * 0.0689476; // Conversão de PSI para bar
 
+  Serial.println("------------------------");
   Serial.print("Temperature: ");
   Serial.print(celsius);
   Serial.println(" °C");
 
-  // Mostra os valores no monitor serial
-  Serial.print("Sensor 1: ");
-  Serial.print(voltage1);
-  Serial.println(" V");
+  Serial.print("Pressão: ");
+  Serial.print(pressaoBar);
+  Serial.println(" bar");
 
-
-  // Exemplo de condições para acionar os relés
-  if (voltage1 > 2.5) { // Liga o Relé 1 se a tensão do Sensor 1 for maior que 2.5V
+  // Condições para acionar os relés
+  if (pressaoBar > 2 && pressaoBar < 30 && celsius > 1) {
     digitalWrite(releVentoinhaPin, HIGH);
+    digitalWrite(releCompressorPin, HIGH);
+    Serial.println("Relés ATIVADOS: Ventoinha e Compressor ligados.");
   } else {
     digitalWrite(releVentoinhaPin, LOW);
+    digitalWrite(releCompressorPin, LOW);
+    Serial.println("Relés DESATIVADOS: Ventoinha e Compressor desligados.");
   }
-
-
 
   // Aguarda 500ms antes de repetir
   delay(500);
