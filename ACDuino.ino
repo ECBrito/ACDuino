@@ -7,6 +7,8 @@ int releCompressorPin = 8;   // Pino digital para o Relé 2/Compressor
 
 OneWire ds(10);  // on pin 10 (a 4.7K resistor is necessary)
 
+bool compressorDesligadoPorTemperatura = false;
+
 void setup() {
   // Configura os pinos dos sensores como entrada
   pinMode(releVentoinhaPin, INPUT);
@@ -72,7 +74,13 @@ void loop() {
   Serial.println(" bar");
 
   // Condições para acionar os relés
-  if (pressaoBar > 2 && pressaoBar < 30 && celsius > 1) {
+  if (celsius <= 3) {
+    compressorDesligadoPorTemperatura = true;
+  } else if (celsius >= 10) {
+    compressorDesligadoPorTemperatura = false;
+  }
+
+  if (pressaoBar > 2 && pressaoBar < 30 && celsius > 1 && !compressorDesligadoPorTemperatura) {
     digitalWrite(releVentoinhaPin, HIGH);
     digitalWrite(releCompressorPin, HIGH);
     Serial.println("Relés ATIVADOS: Ventoinha e Compressor ligados.");
